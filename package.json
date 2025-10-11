@@ -1,0 +1,49 @@
+{
+  "name": "DNA digilog",
+  "author": "astosia",
+  "version": "0.1.0",
+  "keywords": [
+    "analogue",
+    "analog",
+    "digital",
+    "helix",
+    "dna"
+  ],
+  "private": true,
+  "dependencies": {
+    "pebble-clay": "^1.0.4",
+    "pebble-fctx": "^1.6.0",
+    "pebble-fctx-compiler": "^1.2.2"
+  },
+  "pebble": {
+    "displayName": "DNA digilog",
+    "uuid": "cbbacd4f-8d03-4502-acef-4ec4ef0855d7",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "aplite",
+      "basalt",
+      "chalk",
+      "diorite",
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "messageKeys": [
+      "ShowHourNumbers"
+    ],
+    "capabilities": [
+      "configurable"
+    ],
+    "resources": {
+      "media": [
+        {
+          "name": "DIN_CONDENSED_FFONT",
+          "type": "raw",
+          "file": "Conthrax-SemiBold2.ffont"
+        }
+      ]
+    }
+  }
+}
