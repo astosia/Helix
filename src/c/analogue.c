@@ -13,7 +13,7 @@
 enum Palette {
     BEZEL_COLOR,
     FACE_COLOR,
-    RING_COLOR,
+    MINUTE_RING_COLOR_BATTERY,
     MINUTE_TEXT_COLOR,
     MINUTE_HAND_COLOR,
     HOUR_TEXT_COLOR,
@@ -33,6 +33,8 @@ GColor g_palette[PALETTE_SIZE];
 #else
 #define BEZEL_INSET 0
 #endif
+
+#define DIGITS_OFFSET 12
 
 // --------------------------------------------------------------------------
 // Utility functions.
@@ -57,22 +59,22 @@ static inline FPoint clockToCartesian(FPoint center, fixed_t radius, int32_t ang
 // --------------------------------------------------------------------------
 
 void on_layer_update(Layer* layer, GContext* ctx) {
-
+/*draw the minutes*/
     GRect bounds = layer_get_bounds(layer);
     FPoint center_minutes = FPointI(bounds.size.w * 0.25, bounds.size.h / 2);
-  //  FPoint centrer_hour = FPointI(bounds.size.w * 0.8, bounds.size.h / 2);
+    FPoint center_hour = FPointI(bounds.size.w * 0.75, bounds.size.h / 2);
+    FPoint center_line = FPointI(bounds.size.w/2, bounds.size.h / 2);
     fixed_t safe_radius = INT_TO_FIXED(bounds.size.w / 2 - BEZEL_INSET);
 
 #ifdef PBL_PLATFORM_EMERY
-  int minute_text_size = 20;
-//  int hour_text_size = 24;
+  int minute_text_size = 28;
 #else
   int minute_text_size = 18;
-//  int hour_text_size = 22;
 #endif
 
-    fixed_t minute_text_radius = safe_radius;
-    fixed_t ring_outer_radius = minute_text_radius - INT_TO_FIXED(minute_text_size + 0);
+    fixed_t minute_text_radius = safe_radius - INT_TO_FIXED(DIGITS_OFFSET);
+    fixed_t ring_outer_radius = safe_radius - INT_TO_FIXED(minute_text_size + 0);
+    fixed_t ring_outer_outer_radius = ring_outer_radius + INT_TO_FIXED(minute_text_size + DIGITS_OFFSET) + INT_TO_FIXED(80);
     fixed_t ring_inner_radius = ring_outer_radius - INT_TO_FIXED(2);
     fixed_t minute_hand_radius = ring_inner_radius - INT_TO_FIXED(8);
 
@@ -86,43 +88,82 @@ void on_layer_update(Layer* layer, GContext* ctx) {
     fixed_t major_half_width = major_tick_width / 2;
     fixed_t major_inner_edge = outer_edge - major_tick_size;
 
-/*test version*/
-//    fixed_t minute_now = g_local_time.tm_sec;
-//    fixed_t hour_now = g_local_time.tm_min/5;
-/*live version*/
+
     fixed_t minute_now = g_local_time.tm_min;
-  //  fixed_t hour_now = g_local_time.tm_hour %12;
-
-
-    //const char* hour_string = kHourString[g_local_time.tm_hour] %12;
-    //const char* hour_string = kHourString[g_local_time.tm_hour];
     char minute_string[3];
-  //  char hour_string[3];
-    //int32_t minute_angle = g_local_time.tm_min * TRIG_MAX_ANGLE / 60;
-    //int32_t hour_angle = g_local_time.tm_hour %12 * TRIG_MAX_ANGLE / 12;
-    //int hour_number = g_local_time.tm_hour;
-    //char hour_number[3];
-    //snprintf(hour_number, sizeof(hour_number),"%d",g_local_time.tm_hour);
+
+   fixed_t full_cycle_fixed = 60 * TRIG_MAX_RATIO;
+   fixed_t current_time_fixed = minute_now * TRIG_MAX_RATIO;
+
+   // 8 * TRIG_MAX_RATIO gives an angular distance of 8 "units" (where 1 minute is 1 unit)
+   fixed_t max_visible_dist = 9 * TRIG_MAX_RATIO ;
 
     FContext fctx;
     fctx_init_context(&fctx, ctx);
     fctx_set_color_bias(&fctx, 0);
 
 
+
+    /* Draw a thin hour ring. */
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
+    fctx_plot_circle(&fctx, &center_hour, ring_outer_radius);
+    fctx_plot_circle(&fctx, &center_hour, ring_inner_radius);
+    fctx_end_fill(&fctx);
+
+    /* Draw a thin minute ring. */
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
+    fctx_plot_circle(&fctx, &center_minutes, ring_outer_radius);
+    fctx_plot_circle(&fctx, &center_minutes, ring_inner_radius);
+    fctx_end_fill(&fctx);
+
+    fctx_set_color_bias(&fctx, -3);
+
+    //draw thick outer ring
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, g_palette[FACE_COLOR]);
+    fctx_plot_circle(&fctx, &center_minutes, minute_text_radius - INT_TO_FIXED(1));
+    fctx_plot_circle(&fctx, &center_minutes, ring_outer_outer_radius);
+    fctx_end_fill(&fctx);
+
+    fctx_begin_fill(&fctx);
+    fctx_set_fill_color(&fctx, g_palette[FACE_COLOR]);
+    fctx_plot_circle(&fctx, &center_hour, minute_text_radius - INT_TO_FIXED(1));
+    fctx_plot_circle(&fctx, &center_hour, ring_outer_outer_radius);
+    fctx_end_fill(&fctx);
+// #ifdef PBL_BW
+//     fctx_begin_fill(&fctx);
+//     fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
+//     fctx_plot_circle(&fctx, &center_minutes, ring_outer_radius - INT_TO_FIXED(1));
+//     fctx_plot_circle(&fctx, &center_minutes, ring_inner_radius);
+//     fctx_end_fill(&fctx);
+//
+//     fctx_begin_fill(&fctx);
+//     fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
+//     fctx_plot_circle(&fctx, &center_hour, ring_outer_radius - INT_TO_FIXED(1));
+//     fctx_plot_circle(&fctx, &center_hour, ring_inner_radius);
+//     fctx_end_fill(&fctx);
+//
+//
+// #endif
+
+    fctx_set_color_bias(&fctx, 0);
 /////////////////////////////////////
 ///Draw minutes
 /////////////////////////////////////
-    /* Draw the minute digits. */
-
     fctx_begin_fill(&fctx);
     fctx_set_fill_color(&fctx, g_palette[MINUTE_TEXT_COLOR]);
-    //fctx_set_text_size(&fctx, g_font, minute_text_size);
     fctx_set_text_em_height(&fctx,g_font, minute_text_size);
     for (int m = 0; m < 60; m += 5) {
-        snprintf(minute_string, sizeof minute_string, "%02d", m);
-      //  int32_t circular_dist = abs(m - (minute_now % 60));
+          snprintf(minute_string, sizeof minute_string, "%02d", m);
 
-      //  if (circular_dist < 21) {
+          fixed_t m_fixed = m * TRIG_MAX_RATIO;
+          fixed_t diff = abs(m_fixed - current_time_fixed);
+          fixed_t circular_dist = (diff < full_cycle_fixed / 2) ? diff : (full_cycle_fixed - diff);
+
+          if (circular_dist <= max_visible_dist) {
+
         int32_t minute_angle = (-minute_now + m + 15) * TRIG_MAX_ANGLE / 60;
 
 
@@ -134,12 +175,12 @@ void on_layer_update(Layer* layer, GContext* ctx) {
         FPoint p = clockToCartesian(center_minutes, minute_text_radius, minute_angle);
         fctx_set_rotation(&fctx, text_rotation);
         fctx_set_offset(&fctx, p);
-        fctx_draw_string(&fctx, minute_string, g_font, GTextAlignmentCenter, text_anchor);
+        fctx_draw_string(&fctx, minute_string, g_font, GTextAlignmentLeft, text_anchor);
     }
-//  }
+  }
     fctx_end_fill(&fctx);
 
-/* Draw the minor ticks. */
+/* Draw the major ticks. */
     for (int m = 0; m < 60; m += 5) {
       snprintf(minute_string, sizeof minute_string, "%02d", m);
 
@@ -154,17 +195,9 @@ void on_layer_update(Layer* layer, GContext* ctx) {
     fctx_set_rotation(&fctx, minute_angle);
     fctx_set_offset(&fctx, center_minutes);
 
-    // Draw the rectangular tick (positioned along the Y-axis and then rotated)
-    // 1. Start path: Top-Left corner (Inner edge of the tick)
     fctx_move_to (&fctx, FPoint(-major_half_width, -major_inner_edge));
-
-    // 2. Top-Right corner
     fctx_line_to (&fctx, FPoint( major_half_width, -major_inner_edge));
-
-    // 3. Bottom-Right corner (Outer edge of the tick)
     fctx_line_to (&fctx, FPoint( major_half_width, -outer_edge));
-
-    // 4. Bottom-Left corner
     fctx_line_to (&fctx, FPoint(-major_half_width, -outer_edge));
     fctx_close_path(&fctx);
     fctx_end_fill(&fctx);
@@ -172,34 +205,24 @@ void on_layer_update(Layer* layer, GContext* ctx) {
   }
 
     for (int m = 0; m < 60; m++) {
-    //     // Skip every 5th minute mark, which is usually a larger hour tick
+    //     // ignore every 5th minute mark, which is usually a larger hour tick
       snprintf(minute_string, sizeof minute_string, "%02d", m);
          if (m % 5 == 0) continue;
 
-      //const int32_t proximity_minute_mark = 15;
       int32_t circular_dist = abs(m - (minute_now % 60));
 
       if (circular_dist < 3) {
       int32_t minute_angle = (-minute_now + m + 15) * TRIG_MAX_ANGLE / 60;
       fctx_begin_fill(&fctx);
-      fctx_set_fill_color(&fctx, g_palette[RING_COLOR]);
+      fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
       fctx_set_scale(&fctx, FPointOne, FPointOne);
       fctx_set_rotation(&fctx, minute_angle);
       fctx_set_offset(&fctx, center_minutes);
 
 
-          // Draw the rectangular tick (positioned along the Y-axis and then rotated)
-
-          // 1. Start path: Top-Left corner (Inner edge of the tick)
           fctx_move_to (&fctx, FPoint(-half_width, -inner_edge));
-
-          // 2. Top-Right corner
           fctx_line_to (&fctx, FPoint( half_width, -inner_edge));
-
-          // 3. Bottom-Right corner (Outer edge of the tick)
           fctx_line_to (&fctx, FPoint( half_width, -outer_edge));
-
-          // 4. Bottom-Left corner
           fctx_line_to (&fctx, FPoint(-half_width, -outer_edge));
           fctx_close_path(&fctx);
           fctx_end_fill(&fctx);
@@ -207,33 +230,43 @@ void on_layer_update(Layer* layer, GContext* ctx) {
     }
 
 
-    /* Draw a thin minute ring. */
+
+
+//draw short line in centre
     fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g_palette[RING_COLOR]);
-    fctx_plot_circle(&fctx, &center_minutes, ring_outer_radius);
-    fctx_plot_circle(&fctx, &center_minutes, ring_inner_radius);
+    fctx_set_fill_color(&fctx, g_palette[MINUTE_RING_COLOR_BATTERY]);
+    fctx_set_scale(&fctx, FPointOne, FPointOne);
+    fctx_set_rotation(&fctx, TRIG_MAX_ANGLE/4);
+    fctx_set_offset(&fctx, center_line);
+
+    fixed_t line_length = INT_TO_FIXED(6);
+    fctx_move_to (&fctx, FPoint(-major_half_width, -line_length));
+    fctx_line_to (&fctx, FPoint( major_half_width, -line_length));
+    fctx_line_to (&fctx, FPoint( major_half_width, line_length));
+    fctx_line_to (&fctx, FPoint(-major_half_width, line_length));
+    fctx_close_path(&fctx);
     fctx_end_fill(&fctx);
 
     fctx_deinit_context(&fctx);
+
 }
 
 void on_layer_update_hr(Layer* layer, GContext* ctx) {
-
+/*draw the hour*/
   GRect bounds = layer_get_bounds(layer);
- //FPoint center_minutes = FPointI(bounds.size.w * 0.2, bounds.size.h / 2);
+    FPoint center_minutes = FPointI(bounds.size.w * 0.25, bounds.size.h / 2);
   FPoint center_hour = FPointI(bounds.size.w * 0.75, bounds.size.h / 2);
   fixed_t safe_radius = INT_TO_FIXED(bounds.size.w / 2 - BEZEL_INSET);
 
 #ifdef PBL_PLATFORM_EMERY
-//int minute_text_size = 24;
-  int hour_text_size = 20;
+  int hour_text_size = 28;
 #else
-//int minute_text_size = 22;
   int hour_text_size = 18;
 #endif
 
-  fixed_t minute_text_radius = safe_radius;
-  fixed_t ring_outer_radius = minute_text_radius - INT_TO_FIXED(hour_text_size + 0);
+  fixed_t minute_text_radius = safe_radius - INT_TO_FIXED(DIGITS_OFFSET);
+  fixed_t ring_outer_radius = safe_radius - INT_TO_FIXED(hour_text_size + 0);
+  fixed_t ring_outer_outer_radius = ring_outer_radius + INT_TO_FIXED(hour_text_size + DIGITS_OFFSET);
   fixed_t ring_inner_radius = ring_outer_radius - INT_TO_FIXED(2);
   fixed_t minute_hand_radius = ring_inner_radius - INT_TO_FIXED(8);
 
@@ -247,75 +280,86 @@ void on_layer_update_hr(Layer* layer, GContext* ctx) {
   fixed_t major_half_width = major_tick_width / 2;
   fixed_t major_inner_edge = outer_edge - major_tick_size;
 
-/*test version*/
-  //  fixed_t minute_now = g_local_time.tm_sec;
     fixed_t hour_now = g_local_time.tm_hour %12;
+    fixed_t minute_now = g_local_time.tm_min;
+    fixed_t minute_offset = minute_now * TRIG_MAX_ANGLE / 60; // Total minute angle for smooth sweep
 
-  
+    fixed_t minute_fraction_fixed_hour = minute_now * (TRIG_MAX_RATIO / 60);
+    fixed_t current_time_fixed = hour_now * TRIG_MAX_RATIO + minute_fraction_fixed_hour;
+    fixed_t full_cycle_fixed = 12 * TRIG_MAX_RATIO;
+    fixed_t max_visible_dist = 100 * TRIG_MAX_RATIO / 60; //first number is  the visbible angle
+    fixed_t max_visible_dist_ticks = 30 * TRIG_MAX_RATIO / 60; //first number is  the visbible angle
+    // ----------------------------------------------------------------------
 
-/*live version*/
-  //  fixed_t minute_now = g_local_time.tm_min;
-  //  fixed_t hour_now = g_local_time.tm_hour %12;
-
-
-    //const char* hour_string = kHourString[g_local_time.tm_hour] %12;
-    //const char* hour_string = kHourString[g_local_time.tm_hour];
-
+    char minute_string[3];
     char hour_string[3];
-    //int32_t minute_angle = g_local_time.tm_min * TRIG_MAX_ANGLE / 60;
-    //int32_t hour_angle = g_local_time.tm_hour %12 * TRIG_MAX_ANGLE / 12;
-    //int hour_number = g_local_time.tm_hour;
-    //char hour_number[3];
-    //snprintf(hour_number, sizeof(hour_number),"%d",g_local_time.tm_hour);
 
     FContext fctx;
     fctx_init_context(&fctx, ctx);
-    fctx_set_color_bias(&fctx, -2);
-
-
-
-
-
+    fctx_set_color_bias(&fctx, 0);
 
 
     /* Draw the hour digits. */
 
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g_palette[MINUTE_TEXT_COLOR]);
-    //fctx_set_text_size(&fctx, g_font, minute_text_size);
-    fctx_set_text_em_height(&fctx,g_font, hour_text_size);
     for (int h = 0; h < 12; h += 1) {
+        fctx_begin_fill(&fctx);
+        fctx_set_fill_color(&fctx, g_palette[MINUTE_TEXT_COLOR]);
+        fctx_set_text_em_height(&fctx,g_font, hour_text_size);
+
+        fixed_t h_fixed = h * TRIG_MAX_RATIO;
+        fixed_t diff = abs(h_fixed - current_time_fixed);
+        fixed_t circular_dist = (diff < full_cycle_fixed / 2) ? diff : (full_cycle_fixed - diff);
+
+        int32_t hour_angle = -(((-hour_now + h + 3) * TRIG_MAX_ANGLE / 12) - minute_offset/12);
+
         snprintf(hour_string, sizeof hour_string, "%d", h);
-      //  int32_t circular_dist = abs(h - (hour_now % 12));
-
-      //  if (circular_dist < 21) {
-        int32_t hour_angle = (-hour_now + h + 9) * TRIG_MAX_ANGLE / 12;
-
 
         int32_t text_rotation;
         FTextAnchor text_anchor;
-            text_rotation = hour_angle + TRIG_MAX_ANGLE / 4;
-            text_anchor = FTextAnchorMiddle;
+        text_rotation = hour_angle + TRIG_MAX_ANGLE / 4;
+        text_anchor = FTextAnchorMiddle;
 
         FPoint p = clockToCartesian(center_hour, minute_text_radius, hour_angle);
-        fctx_set_rotation(&fctx, text_rotation);
-        fctx_set_offset(&fctx, p);
-        fctx_draw_string(&fctx, hour_string, g_font, GTextAlignmentCenter, text_anchor);
-    }
-    //  }
-    fctx_end_fill(&fctx);
 
-    /* Draw a thin minute ring. */
-    fctx_begin_fill(&fctx);
-    fctx_set_fill_color(&fctx, g_palette[RING_COLOR]);
-    fctx_plot_circle(&fctx, &center_hour, ring_outer_radius);
-    fctx_plot_circle(&fctx, &center_hour, ring_inner_radius);
-    fctx_end_fill(&fctx);
+        if (circular_dist <= max_visible_dist) {
+            fctx_set_rotation(&fctx, text_rotation);
+            fctx_set_offset(&fctx, p);
+            fctx_draw_string(&fctx, hour_string, g_font, GTextAlignmentRight, text_anchor);
+            fctx_end_fill(&fctx);
+
+        }
+
+        //if (circular_dist <= max_visible_dist_ticks) {
+        if (h == hour_now) {
+
+                fctx_begin_fill(&fctx);
+                fctx_set_fill_color(&fctx, g_palette[MINUTE_HAND_COLOR]);
+                fctx_set_scale(&fctx, FPointOne, FPointOne);
+                fctx_set_rotation(&fctx, hour_angle);
+                fctx_set_offset(&fctx, center_hour);
+
+                // Draw the rectangular tick (positioned along the Y-axis and then rotated)
+                // 1. Start path: Top-Left corner (Inner edge of the tick)
+                fctx_move_to (&fctx, FPoint(-major_half_width, -major_inner_edge));
+
+                // 2. Top-Right corner
+                fctx_line_to (&fctx, FPoint( major_half_width, -major_inner_edge));
+
+                // 3. Bottom-Right corner (Outer edge of the tick)
+                fctx_line_to (&fctx, FPoint( major_half_width, -outer_edge));
+
+                // 4. Bottom-Left corner
+                fctx_line_to (&fctx, FPoint(-major_half_width, -outer_edge));
+                fctx_close_path(&fctx);
+                fctx_end_fill(&fctx);
+        }
+    }
+
+
 
 
     fctx_deinit_context(&fctx);
 }
-
 // --------------------------------------------------------------------------
 // System event handlers.
 // --------------------------------------------------------------------------
@@ -353,20 +397,18 @@ if (hournumberson_t){
 void on_battery_state(BatteryChargeState charge) {
 
     if (charge.is_charging) {
-        g_palette[RING_COLOR] = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite);
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorElectricBlue, GColorWhite);
     } else if (charge.charge_percent <= 20) {
-        g_palette[RING_COLOR] = PBL_IF_COLOR_ELSE(GColorOrange, GColorDarkGray);
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorOrange, GColorDarkGray);
     } else if (charge.charge_percent <= 50) {
-        g_palette[RING_COLOR] = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray);
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray);
     } else {
-        g_palette[RING_COLOR] = PBL_IF_COLOR_ELSE(GColorScreaminGreen, GColorWhite);
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorScreaminGreen, GColorWhite);
     }
 
     layer_mark_dirty(g_layer);
     layer_mark_dirty(g_layer_hr);
 }
-
-
 
 void on_tick_timer(struct tm* tick_time, TimeUnits units_changed) {
     g_local_time = *tick_time;
@@ -402,6 +444,8 @@ static void init() {
     window_stack_push(g_window, true);
     Layer* window_layer = window_get_root_layer(g_window);
     GRect window_frame = layer_get_frame(window_layer);
+
+
 
     g_layer = layer_create(window_frame);
     layer_set_update_proc(g_layer, &on_layer_update);
