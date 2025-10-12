@@ -1,13 +1,20 @@
 {
-  "name": "DNA digilog",
+  "name": "Helix",
   "author": "astosia",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "keywords": [
+    "pebble",
+    "watchface",
     "analogue",
     "analog",
     "digital",
     "helix",
-    "dna"
+    "dna",
+    "convex",
+    "rings",
+    "venn",
+    "jump hour",
+    "configurable"
   ],
   "private": true,
   "dependencies": {
@@ -16,7 +23,7 @@
     "pebble-fctx-compiler": "^1.2.2"
   },
   "pebble": {
-    "displayName": "DNA digilog",
+    "displayName": "Helix",
     "uuid": "cbbacd4f-8d03-4502-acef-4ec4ef0855d7",
     "sdkVersion": "3",
     "enableMultiJS": true,
@@ -31,7 +38,17 @@
       "watchface": true
     },
     "messageKeys": [
-      "ShowHourNumbers"
+      "ShowHourNumbers",
+      "JumpHourOn",
+      "InvertScreen",
+      "DigitsColor",
+      "DialColorMinutes",
+      "DialColorHours",
+      "ColorMajorTick",
+      "ColorMinorTick",
+      "AddZero12h",
+      "RemoveZero24h",
+      "BTVibeOn"
     ],
     "capabilities": [
       "configurable"
@@ -42,6 +59,13 @@
           "name": "DIN_CONDENSED_FFONT",
           "type": "raw",
           "file": "Conthrax-SemiBold.ffont"
+        },
+        {
+          "file": "fonts/Dripicons",
+          "characterRegex": "[z]",
+          "name": "FONT_DRIPICONS_12",
+          "targetPlatforms": null,
+          "type": "font"
         }
       ]
     }
