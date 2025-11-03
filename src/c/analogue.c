@@ -316,28 +316,59 @@ void on_layer_update(Layer* layer, GContext* ctx) {
       int display_h = h;
       bool format_24h = clock_is_24h_style();
 
-      if (format_24h) {
-          //Get the base 12-hour number (1-12) for the dial position 'h'
-          if (h == 0) {
-              display_h = 12; // Dial position 0 is 12 o'clock
-          } else {
-              display_h = h;
+      // if (format_24h) {
+      //     //Get the base 12-hour number (1-12) for the dial position 'h'
+      //     if (h == 0) {
+      //         display_h = 12; // Dial position 0 is 12 o'clock
+      //     } else {
+      //         display_h = h;
+      //     }
+
+      //     //Convert to 24-hour value based on the current time's AM/PM cycle
+      //     if (g_local_time.tm_hour >= 12) {
+      //         // PM cycle (12:00 - 23:59). We want 13 for 1, 14 for 2, etc.
+      //         // 12 o'clock position (display_h=12) stays 12 (12PM).
+      //         if (display_h != 12) {
+      //             display_h += 12; // 1 -> 13, 11 -> 23
+      //         }
+      //     } else {
+      //         // 12 o'clock position (display_h=12) becomes 0 (12AM -> 00:xx).
+      //         if (display_h == 12) {
+      //             display_h = 0;
+      //         }
+      //       }
+      // } else {
+      //     // 12-hour mode (e.g., 1, 12)
+      //     // If h=0, display 12. Else display h.
+      //     if (h == 0) {
+      //         display_h = 12;
+      //     } else {
+      //         display_h = h;
+      //     }
+      // }
+
+if (format_24h) {
+          int hour_now_24h = g_local_time.tm_hour; // Current hour (0-23)
+          int hour_now_12h = hour_now_24h % 12; // Current 12h position (0-11)
+
+          // 1. Calculate the raw difference in 12-hour positions (range -11 to 11)
+          int diff_12h_raw = h - hour_now_12h;
+
+          // 2. Normalize the difference to the shortest angular distance
+          // This converts the 12h dial difference (e.g., 11 or -11) into a 24h offset (-1 or +1).
+          int delta_24h = diff_12h_raw;
+          if (diff_12h_raw > 6) {
+              delta_24h -= 12; // Example: 00:xx (0) to 11 (h) is 11 forward, corrected to -1 backward
+          } else if (diff_12h_raw <= -6) {
+              delta_24h += 12; // Example: 23:xx (11) to 0 (h) is -11 backward, corrected to +1 forward
           }
 
-          //Convert to 24-hour value based on the current time's AM/PM cycle
-          if (g_local_time.tm_hour >= 12) {
-              // PM cycle (12:00 - 23:59). We want 13 for 1, 14 for 2, etc.
-              // 12 o'clock position (display_h=12) stays 12 (12PM).
-              if (display_h != 12) {
-                  display_h += 12; // 1 -> 13, 11 -> 23
-              }
-          } else {
-              // 12 o'clock position (display_h=12) becomes 0 (12AM -> 00:xx).
-              if (display_h == 12) {
-                  display_h = 0;
-              }
-            }
+          // 3. Calculate the target 24-hour value and normalize
+          // Add 24 before modulo to ensure positive result for negative delta_24h
+          display_h = (hour_now_24h + delta_24h + 24) % 24;
+
       } else {
+          // Keep existing 12-hour mode logic
           // 12-hour mode (e.g., 1, 12)
           // If h=0, display 12. Else display h.
           if (h == 0) {
@@ -452,6 +483,36 @@ static void layer_update_proc_qt(Layer * layer, GContext * ctx){
 
 }
 
+void on_battery_state(BatteryChargeState charge) {
+
+if(!settings.InvertScreen){
+
+    if (charge.is_charging) {
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorBlue, GColorWhite);
+    } else if (charge.charge_percent <= 20) {
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorOrange, GColorDarkGray);
+    } else if (charge.charge_percent <= 50) {
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray);
+    } else {
+        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorMalachite, GColorWhite);
+    }
+  }
+else{
+  if (charge.is_charging) {
+      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack);
+  } else if (charge.charge_percent <= 20) {
+      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorOrange, GColorLightGray);
+  } else if (charge.charge_percent <= 50) {
+      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorYellow, GColorDarkGray);
+  } else {
+      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack);
+  }
+}
+
+    layer_mark_dirty(g_layer);
+  //  layer_mark_dirty(g_layer_hr);
+}
+
 // --------------------------------------------------------------------------
 // System event handlers.
 // --------------------------------------------------------------------------
@@ -487,6 +548,7 @@ if (invert_t) {
   settings.InvertScreen = invert_t->value->int32 == 1;
   update_palette();
   window_set_background_color(g_window, g_palette[FACE_COLOR]);
+  on_battery_state(battery_state_service_peek());
   layer_mark_dirty(g_layer);
 }
 
@@ -508,35 +570,7 @@ if (vibe_t) {
   prv_save_settings();
 }
 
-void on_battery_state(BatteryChargeState charge) {
 
-if(!settings.InvertScreen){
-
-    if (charge.is_charging) {
-        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorBlue, GColorWhite);
-    } else if (charge.charge_percent <= 20) {
-        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorOrange, GColorDarkGray);
-    } else if (charge.charge_percent <= 50) {
-        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorYellow, GColorLightGray);
-    } else {
-        g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorMalachite, GColorWhite);
-    }
-  }
-else{
-  if (charge.is_charging) {
-      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorBlue, GColorBlack);
-  } else if (charge.charge_percent <= 20) {
-      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorOrange, GColorLightGray);
-  } else if (charge.charge_percent <= 50) {
-      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorYellow, GColorDarkGray);
-  } else {
-      g_palette[MINUTE_RING_COLOR_BATTERY] = PBL_IF_COLOR_ELSE(GColorIslamicGreen, GColorBlack);
-  }
-}
-
-    layer_mark_dirty(g_layer);
-  //  layer_mark_dirty(g_layer_hr);
-}
 
 void on_tick_timer(struct tm* tick_time, TimeUnits units_changed) {
     g_local_time = *tick_time;

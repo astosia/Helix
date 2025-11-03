@@ -1,7 +1,7 @@
 {
   "name": "Helix",
   "author": "astosia",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "keywords": [
     "pebble",
     "watchface",
@@ -61,7 +61,7 @@
           "file": "Conthrax-SemiBold.ffont"
         },
         {
-          "file": "fonts/Dripicons",
+          "file": "fonts/dripicons-v2.ttf",
           "characterRegex": "[z]",
           "name": "FONT_DRIPICONS_12",
           "targetPlatforms": null,
