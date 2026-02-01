@@ -1,7 +1,7 @@
 {
   "name": "Helix",
   "author": "astosia",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": [
     "pebble",
     "watchface",
@@ -9,6 +9,8 @@
     "analog",
     "digital",
     "helix",
+    "dualtime",
+    "timezone",
     "dna",
     "convex",
     "rings",
@@ -18,6 +20,7 @@
   ],
   "private": true,
   "dependencies": {
+    "@rebble/clay": "^1.0.6",
     "pebble-clay": "^1.0.4",
     "pebble-fctx": "^1.6.0",
     "pebble-fctx-compiler": "^1.2.2"
@@ -48,7 +51,14 @@
       "ColorMinorTick",
       "AddZero12h",
       "RemoveZero24h",
-      "BTVibeOn"
+      "BTVibeOn",
+      "RemoteTimeOffsetMinutes",
+      "TZ_ID",
+      "TZ_ID_STATE",
+      "TZ_MODE",
+      "TZ_OFFSET",
+      "TZ_CODE",
+      "TZ_STATUS_MESSAGE"
     ],
     "capabilities": [
       "configurable"
