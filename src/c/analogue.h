@@ -13,6 +13,9 @@ typedef struct ClaySettings {
   bool RemoveZero24h;
   bool AddZero12h;
   bool BTVibeOn;
+  bool showlocalAMPM;
+  bool showremoteAMPM;
+ // bool ampm_onminutering;
   int RemoteTimeOffsetMinutes;
   bool tz_mode;
   int tz_id;

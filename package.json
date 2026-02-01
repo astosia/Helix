@@ -1,7 +1,7 @@
 {
   "name": "Helix",
   "author": "astosia",
-  "version": "2.0.0",
+  "version": "2.5.0",
   "keywords": [
     "pebble",
     "watchface",
@@ -58,7 +58,10 @@
       "TZ_MODE",
       "TZ_OFFSET",
       "TZ_CODE",
-      "TZ_STATUS_MESSAGE"
+      "TZ_STATUS_MESSAGE",
+      "showlocalAMPM",
+      "showremoteAMPM",
+      "ampm_onminutering"
     ],
     "capabilities": [
       "configurable"

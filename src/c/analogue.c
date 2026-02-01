@@ -67,6 +67,9 @@ settings.JumpHourOn = false;
 settings.InvertScreen = false;
 settings.AddZero12h = false;
 settings.RemoveZero24h = false;
+settings.showlocalAMPM = true;
+settings.showremoteAMPM = true;
+//settings.ampm_onminutering = false;
 settings.BTVibeOn = true;
 settings.DigitsColor = GColorWhite;
 settings.DialColorMinutes = GColorWhite;
@@ -165,7 +168,7 @@ void on_layer_update(Layer* layer, GContext* ctx) {
 
 //size of the rings & distance from the rings of the digits
     fixed_t minute_text_radius = safe_radius - INT_TO_FIXED(DIGITS_OFFSET);
-    fixed_t remote_text_radius = safe_radius - INT_TO_FIXED(DIGITS_OFFSET - 2);
+    fixed_t remote_text_radius = safe_radius - INT_TO_FIXED(DIGITS_OFFSET - 2); //was just -2
     fixed_t ring_outer_radius = safe_radius - INT_TO_FIXED(text_size + 0);
     fixed_t ring_outer_outer_radius = ring_outer_radius + INT_TO_FIXED(text_size + DIGITS_OFFSET) + INT_TO_FIXED(80);
     fixed_t ring_inner_radius = ring_outer_radius - INT_TO_FIXED(2*ZOOM_FACTOR);
@@ -287,10 +290,15 @@ void on_layer_update(Layer* layer, GContext* ctx) {
                 int32_t remote_minute_angle = minute_angle + DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES); 
                 FPoint remote_p = clockToCartesian(center_minutes, remote_text_radius, remote_minute_angle);
 
-                fctx_set_rotation(&fctx, text_rotation);
+                int32_t remote_minute_text_rotation;
+                FTextAnchor remote_minute_text_anchor;
+                remote_minute_text_rotation = remote_minute_angle - TRIG_MAX_ANGLE / 4;
+                remote_minute_text_anchor = FTextAnchorMiddle;
+
+                fctx_set_rotation(&fctx, remote_minute_text_rotation);
                 fctx_set_offset(&fctx, remote_p);
                 fctx_set_text_em_height(&fctx,g_font, text_size_remote); // Smaller font for remote
-                fctx_draw_string(&fctx, remote_minute_string, g_font, GTextAlignmentLeft, text_anchor);
+                fctx_draw_string(&fctx, remote_minute_string, g_font, GTextAlignmentLeft, remote_minute_text_anchor);
                 fctx_end_fill(&fctx);
             }
         }
@@ -355,6 +363,16 @@ void on_layer_update(Layer* layer, GContext* ctx) {
 ///Draw Hours Text
 /////////////////////////////////////
 
+      static char remote_ampm_string[12];
+      static char local_ampm_string[12];
+
+      strftime(remote_ampm_string, sizeof(remote_ampm_string), "%p", &g_remote_time);
+      strftime(local_ampm_string, sizeof(local_ampm_string), "%p", &g_local_time);
+
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "local AMPM Calc Hour: %d", g_local_time.tm_hour);
+      //APP_LOG(APP_LOG_LEVEL_DEBUG, "remote AMPM Calc Hour: %d", g_remote_time.tm_hour);
+
+
     for (int h = 0; h < 12; h += 1) {
         
         fixed_t h_fixed = h * TRIG_MAX_RATIO;
@@ -374,7 +392,7 @@ void on_layer_update(Layer* layer, GContext* ctx) {
       int display_h;
       bool format_24h = clock_is_24h_style();
 
-      char remote_num_buffer[3];
+      char remote_num_buffer[10];
       int remote_h_display;
 
       int local_24h_value_at_h; 
@@ -448,7 +466,8 @@ void on_layer_update(Layer* layer, GContext* ctx) {
             }
       }
 
-      // 24h mode uses zero-padding ("%02d"), 12h mode does not ("%d").
+      // 24h mode uses zero-padding ("%02d"), 12h mode does not ("%d") 
+
       if (format_24h && !settings.RemoveZero24h) {
           snprintf(hour_string, sizeof hour_string, "%02d", display_h);
           snprintf(remote_num_buffer, sizeof remote_num_buffer, "%02d", remote_h_display);
@@ -466,6 +485,8 @@ void on_layer_update(Layer* layer, GContext* ctx) {
           snprintf(remote_num_buffer, sizeof remote_num_buffer, "%d", remote_h_display);
       }
 
+      
+
         int32_t text_rotation;
         FTextAnchor text_anchor;
         text_rotation = hour_angle + TRIG_MAX_ANGLE / 4;
@@ -474,8 +495,14 @@ void on_layer_update(Layer* layer, GContext* ctx) {
         FPoint p = clockToCartesian(center_hour, minute_text_radius, hour_angle);
 
         // Apply angular shift for remote hour
-        fixed_t remote_angle = hour_angle - DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES);
-        FPoint remote_p = clockToCartesian(center_hour, remote_text_radius, remote_angle);
+        
+        fixed_t remote_hour_angle = hour_angle - DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES);
+        fixed_t remote_ampm_angle = hour_angle - DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES * 1.65);
+        
+        FPoint remote_p_hour = clockToCartesian(center_hour, remote_text_radius, remote_hour_angle);
+        FPoint remote_p_ampm = clockToCartesian(center_hour, remote_text_radius, remote_ampm_angle);
+
+        
         
         // --- Condition for Drawing LOCAL Hour ---
         bool draw_local_hour = false;
@@ -494,6 +521,68 @@ void on_layer_update(Layer* layer, GContext* ctx) {
             fctx_set_offset(&fctx, p);
             fctx_draw_string(&fctx, hour_string, g_font, GTextAlignmentRight, text_anchor);
             fctx_end_fill(&fctx);
+
+            // Draw Local AM/PM (half size, Above the Hour)
+              if (!format_24h && settings.showlocalAMPM && (h == hour_now) ) { //&& !settings.ampm_onminutering) {
+                fixed_t local_ampm_angle = hour_angle + DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES * 0.85);
+                FPoint local_p_ampm = clockToCartesian(center_hour, minute_text_radius, local_ampm_angle);
+
+                int32_t local_ampm_text_rotation;
+                FTextAnchor local_ampm_text_anchor;
+                local_ampm_text_rotation = local_ampm_angle + TRIG_MAX_ANGLE / 4;
+                local_ampm_text_anchor = FTextAnchorMiddle;
+                  // Calculate vertical shift to place it "above"
+                  // Using text_size * 0.8 to give it enough clearance
+                  //int vertical_shift = (text_size * 2) / 3 - 2; //was * 4 / 5 for full size text
+
+                  fctx_begin_fill(&fctx);
+                  fctx_set_fill_color(&fctx, g_palette[MINUTE_TEXT_COLOR]); 
+                  fctx_set_rotation(&fctx, local_ampm_text_rotation);
+                  fctx_set_text_em_height(&fctx, g_font, text_size / 2);
+                  
+                  // Subtract from Y to move it "up" on the screen
+                  //fctx_set_offset(&fctx, FPoint(p.x, p.y - INT_TO_FIXED(vertical_shift)));
+                  fctx_set_offset(&fctx, local_p_ampm);
+                  
+                  fctx_draw_string(&fctx, local_ampm_string, g_font, GTextAlignmentRight, local_ampm_text_anchor);
+                  fctx_end_fill(&fctx);
+              }
+
+              // Draw Local AM/PM (half size, Above the MINUTE)
+            //   if (!format_24h && settings.showlocalAMPM && (h == hour_now) && settings.ampm_onminutering) {
+
+            //     for (int m = 0; m < 60; m += 5) {
+            //       fixed_t m_fixed = m * TRIG_MAX_RATIO;
+            //       fixed_t diff = abs(m_fixed - current_time_fixed_minutes);
+            //       fixed_t circular_dist = (diff < full_cycle_fixed_minutes / 2) ? diff : (full_cycle_fixed_minutes - diff);
+
+            //         if (circular_dist <= remote_minute_margin) {
+            //     int32_t minute_angle = (-minute_now + m + 15) * TRIG_MAX_ANGLE / 60;
+            //     fixed_t local_ampm_angle = minute_angle - DEG_TO_TRIGANGLE(ANGLE_OFFSET_DEGREES * 0.85);
+            //     FPoint local_p_ampm = clockToCartesian(center_minutes, minute_text_radius, local_ampm_angle);
+
+            //     int32_t local_ampm_text_rotation;
+            //     FTextAnchor local_ampm_text_anchor;
+            //     local_ampm_text_rotation = local_ampm_angle - TRIG_MAX_ANGLE / 4;
+            //     local_ampm_text_anchor = FTextAnchorMiddle;
+            //       // Calculate vertical shift to place it "above"
+            //       // Using text_size * 0.8 to give it enough clearance
+            //       //int vertical_shift = (text_size * 2) / 3 - 2; //was * 4 / 5 for full size text
+
+            //       fctx_begin_fill(&fctx);
+            //       fctx_set_fill_color(&fctx, g_palette[MINUTE_TEXT_COLOR]); 
+            //       fctx_set_rotation(&fctx, local_ampm_text_rotation);
+            //       fctx_set_text_em_height(&fctx, g_font, text_size / 2);
+                  
+            //       // Subtract from Y to move it "up" on the screen
+            //       //fctx_set_offset(&fctx, FPoint(p.x, p.y - INT_TO_FIXED(vertical_shift)));
+            //       fctx_set_offset(&fctx, local_p_ampm);
+                  
+            //       fctx_draw_string(&fctx, local_ampm_string, g_font, GTextAlignmentLeft, local_ampm_text_anchor);
+            //       fctx_end_fill(&fctx);
+            //   }
+            // }
+            // }
         }
 
         // --- Condition for Drawing REMOTE Hour (Only for the current hour marker) ---
@@ -504,14 +593,37 @@ void on_layer_update(Layer* layer, GContext* ctx) {
               // Error state: display "99"
               snprintf(remote_num_buffer, sizeof remote_num_buffer, "99");
               }   
+                int32_t remote_hour_text_rotation;
+                FTextAnchor remote_hour_text_anchor;
+                remote_hour_text_rotation = remote_hour_angle + TRIG_MAX_ANGLE / 4;
+                remote_hour_text_anchor = FTextAnchorMiddle;
 
             fctx_begin_fill(&fctx);
             fctx_set_fill_color(&fctx, g_palette[HOUR_TEXT_COLOR]); 
-            fctx_set_rotation(&fctx, text_rotation);
-            fctx_set_offset(&fctx, remote_p);
+            fctx_set_rotation(&fctx, remote_hour_text_rotation);
+            fctx_set_offset(&fctx, remote_p_hour);
             fctx_set_text_em_height(&fctx,g_font, text_size_remote); 
-            fctx_draw_string(&fctx, remote_num_buffer, g_font, GTextAlignmentRight, text_anchor);
+            fctx_draw_string(&fctx, remote_num_buffer, g_font, GTextAlignmentRight, remote_hour_text_anchor);
             fctx_end_fill(&fctx);
+
+                // 2. Only draw AM/PM if in 12h mode and set to show on hour ring side
+                if (!format_24h && settings.showremoteAMPM){ // && !settings.ampm_onminutering) {
+                    ///put the remote AM/PM marker below the remote hour, and at half the size
+                    //int vertical_offset = (text_size_remote * 2) / 3 + 2;   
+                    //int horizontal_offset = 1;
+                    int32_t remote_ampm_text_rotation;
+                    FTextAnchor remote_ampm_text_anchor;
+                    remote_ampm_text_rotation = remote_ampm_angle + TRIG_MAX_ANGLE / 4;
+                    remote_ampm_text_anchor = FTextAnchorMiddle;                 
+                    fctx_begin_fill(&fctx);
+                    fctx_set_rotation(&fctx, remote_ampm_text_rotation);                    
+                    fctx_set_offset(&fctx, remote_p_ampm);             
+                    // Set font size to half of the remote hour
+                    fctx_set_text_em_height(&fctx, g_font, text_size_remote / 2);
+                    
+                    fctx_draw_string(&fctx, remote_ampm_string, g_font, GTextAlignmentRight, remote_ampm_text_anchor);
+                    fctx_end_fill(&fctx);
+                }
         }
 
 
@@ -636,7 +748,25 @@ Tuple * vibe_t = dict_find(iter, MESSAGE_KEY_BTVibeOn);
 Tuple *tzmode_t = dict_find(iter, MESSAGE_KEY_TZ_MODE);
 Tuple *tzid_t = dict_find(iter, MESSAGE_KEY_TZ_ID);
 Tuple *tzoffset_t = dict_find(iter, MESSAGE_KEY_TZ_OFFSET);
+Tuple *localampm_t = dict_find(iter, MESSAGE_KEY_showlocalAMPM);
+Tuple *remoteampm_t = dict_find(iter, MESSAGE_KEY_showremoteAMPM);
+//Tuple *ampm_onminutering_t = dict_find(iter, MESSAGE_KEY_ampm_onminutering);
 //Tuple *tzcode_t = dict_find(iter, MESSAGE_KEY_TZ_CODE);
+
+// if (ampm_onminutering_t) {
+//   settings.ampm_onminutering = ampm_onminutering_t->value->int32 == 1;
+//   layer_mark_dirty(g_layer);
+// }
+
+if (localampm_t) {
+  settings.showlocalAMPM = localampm_t->value->int32 == 1;
+  layer_mark_dirty(g_layer);
+}
+
+if (remoteampm_t) {
+  settings.showremoteAMPM = remoteampm_t->value->int32 == 1;
+  layer_mark_dirty(g_layer);
+}
 
 
 if (jumphour_t) {
