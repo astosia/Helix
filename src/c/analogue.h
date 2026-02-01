@@ -13,6 +13,11 @@ typedef struct ClaySettings {
   bool RemoveZero24h;
   bool AddZero12h;
   bool BTVibeOn;
+  int RemoteTimeOffsetMinutes;
+  bool tz_mode;
+  int tz_id;
+  int tz_offset;
+  char tz_code[7];
 
   GColor DigitsColor;
   GColor DialColorMinutes;

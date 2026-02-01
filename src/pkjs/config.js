@@ -1,7 +1,7 @@
 module.exports = [
   {
     "type": "heading",
-    "defaultValue": "Analogue"
+    "defaultValue": "Helix"
   },
   {
     "type": "text",
@@ -48,11 +48,44 @@ module.exports = [
         "label": "Bluetooth Disconnect Vibe",
         "description": "OFF = Never Vibrate, ON = Vibrate (when quiet time is off)",
         "defaultValue": true
+      },
+      {
+        "type": "toggle",
+        "messageKey": "TZ_MODE",
+        "label": "Show 2nd Timezone",
+        "description": "OFF = Don't show, ON = Show",
+        "defaultValue": false
+      },
+      {
+        "type": "select",
+        "messageKey": "TZ_ID",
+        "label": "2nd Timezone",
+        "description": "Data provided by worldtimeapi.org",
+        "options": [
+          { "label": "Select a Zone", "value": "" }
+          ]
+      },
+      {
+        "type": "input",
+        "messageKey": "TZ_ID_STATE",
+        "defaultValue": ""
+      },
+      {
+        "type": "button",
+        "id": "TZ_BUTTON",
+        "primary": true,
+        "defaultValue": "Fetch Timezones",
+        "description": "Tap to reload the list.  If this fails on save, 2nd timezone will show as 99"
+      },
+      {
+        "type": "text",
+        "id": "TZ_DEBUG",
+        "defaultValue": ""
       }
     ]
   },
   {
     "type": "submit",
-    "defaultValue": "Save"
+    "defaultValue": "Save Settings"
   }
-]
+];
