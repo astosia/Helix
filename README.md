@@ -2,7 +2,7 @@ Dual Dial configurable watchface, with zoomed in hours & minutes.
 Overlapping dials create a DNA-like Helix
 
 Features:
-- Optional second timezone using worldtimeapi.org, shows second timezone underneath main timezone hours (and under minutes if offset is not a full hour)
+- Optional second timezone using timeapi.io (was worldtimeapi.org but api & site was regularly down), shows second timezone underneath main timezone hours (and under minutes if offset is not a full hour)
 - Black or white background (invert)
 - Show 12hr or 24hr time based on your watch settings
 - Add leading zero to 12hr time, or remove leading zero from 24hr time
