@@ -14,13 +14,11 @@ module.exports = function(minified) {
 
         if (!item || !idstate) return;
 
-        // If fetch fails, make sure the currently saved zone is still in the dropdown
         if (wasError && idstate.get()) {
             var selectElement = item.$manipulatorTarget[0] || item.$manipulatorTarget;
             var currentOptions = selectElement.options;
             var exists = false;
             
-            // Check if the saved timezone already exists in the dropdown
             if (currentOptions && currentOptions.length) {
                 for (var i = 0; i < currentOptions.length; i++) {
                     if (currentOptions[i].value === idstate.get()) {
@@ -30,7 +28,6 @@ module.exports = function(minified) {
                 }
             }
             
-            // If not found, add it
             if (!exists) {
                 var option = document.createElement('option');
                 option.value = idstate.get();
@@ -72,7 +69,6 @@ module.exports = function(minified) {
             disabledOption.textContent = 'Disabled';
             selectElement.appendChild(disabledOption);
 
-            // Add all timezone options
             for (var i = 0; i < timezones.length; i++) {
                 var option = document.createElement('option');
                 option.value = timezones[i];
@@ -82,7 +78,6 @@ module.exports = function(minified) {
 
             tzDebug = "Loaded " + timezones.length + " zones.";
             
-            // Restore the previously selected timezone if it exists
             if (idstate && idstate.get()) {
                 item.set(idstate.get());
             }
@@ -107,7 +102,8 @@ module.exports = function(minified) {
     var getTimezones = function() {
         updateDebug("Starting fetch...");
 
-        var url = 'http://worldtimeapi.org/api/timezone?v=' + Date.now();
+        // Updated to timeapi.io AvailableTimeZones endpoint
+        var url = 'https://timeapi.io/api/TimeZone/AvailableTimeZones';
         var xhr = new XMLHttpRequest();
         var timeoutId;
         var requestStarted = false;
@@ -134,12 +130,10 @@ module.exports = function(minified) {
             try {
                 updateDebug("Processing response...");
                 
-                // Validate response
                 if (!responseText || responseText.length < 10) {
                     throw new Error("Empty or invalid response");
                 }
                 
-                // Try to parse to validate it's JSON
                 var parsed = JSON.parse(responseText);
                 if (!parsed || parsed.length === 0) {
                     throw new Error("Invalid timezone data");
@@ -154,7 +148,6 @@ module.exports = function(minified) {
             }
         };
 
-        // Set timeout
         timeoutId = setTimeout(function() {
             if (!requestStarted) {
                 handleError("Request never started - possible browser blocking");
@@ -165,16 +158,9 @@ module.exports = function(minified) {
         }, 10000);
 
         xhr.onreadystatechange = function() {
-            console.log("[TZ Debug] ReadyState changed to: " + xhr.readyState);
             if (xhr.readyState === 1) {
                 requestStarted = true;
                 updateDebug("Connection opened, sending request...");
-            }
-            if (xhr.readyState === 2) {
-                updateDebug("Request sent, waiting for response...");
-            }
-            if (xhr.readyState === 3) {
-                updateDebug("Receiving data...");
             }
         };
 
@@ -191,15 +177,9 @@ module.exports = function(minified) {
             handleError("Network error - connection blocked");
         };
         
-        xhr.onabort = function() {
-            // Timeout triggered, error already handled
-            console.log("[TZ Debug] Request aborted");
-        };
-        
         try {
-            updateDebug("Opening connection to WorldTimeAPI...");
+            updateDebug("Opening connection to TimeAPI.io...");
             xhr.open('GET', url, true);
-            
             updateDebug("Sending request...");
             xhr.send();
         } catch (e) {
@@ -209,8 +189,6 @@ module.exports = function(minified) {
 
     config.on(config.EVENTS.AFTER_BUILD, function () {
         built = true;
-        console.log("[TZ Debug] Page built");
-
         var stateItem = config.getItemByMessageKey("TZ_ID_STATE");
         if (stateItem) stateItem.hide();
 
@@ -222,15 +200,9 @@ module.exports = function(minified) {
 
         var retryBtn = config.getItemById("TZ_BUTTON");
         if (retryBtn) {
-            console.log("[TZ Debug] Retry button found, attaching click handler");
             retryBtn.on('click', function() {
-                console.log("[TZ Debug] Retry button clicked");
                 getTimezones();
             });
-        } else {
-            console.error("[TZ Debug] Retry button NOT found!");
         }
-
-        // Do NOT auto-fetch - wait for user to click the button
     });
 };

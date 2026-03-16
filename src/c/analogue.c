@@ -40,7 +40,9 @@ struct tm g_remote_time; //second timezone settings
 GColor g_palette[PALETTE_SIZE];
 bool connected = true;
 
-#if defined(PBL_ROUND)
+#if defined (PBL_PLATFORM_GABBRO)
+#define BEZEL_INSET 6
+#elif defined(PBL_ROUND)
 #define BEZEL_INSET 4
 #else
 #define BEZEL_INSET 0
@@ -50,6 +52,10 @@ bool connected = true;
 
 #ifdef PBL_PLATFORM_EMERY
   #define DIGITS_OFFSET 18*ZOOM_FACTOR
+#elif defined (PBL_PLATFORM_GABBRO)
+  #define DIGITS_OFFSET 24*ZOOM_FACTOR
+#elif defined (PBL_ROUND)
+  #define DIGITS_OFFSET 15*ZOOM_FACTOR
 #else
   #define DIGITS_OFFSET 12*ZOOM_FACTOR
 #endif
@@ -64,7 +70,7 @@ ClaySettings settings;
 static void prv_default_settings(){
 settings.ShowHourNumbers = false;
 settings.JumpHourOn = false;
-settings.InvertScreen = false;
+settings.InvertScreen = true;
 settings.AddZero12h = false;
 settings.RemoveZero24h = false;
 settings.showlocalAMPM = true;
@@ -156,10 +162,14 @@ void on_layer_update(Layer* layer, GContext* ctx) {
   int text_size = 26*ZOOM_FACTOR;
   int text_size_remote = text_size - 12;
   fixed_t center_line_length = INT_TO_FIXED(6*ZOOM_FACTOR);
+#elif defined(PBL_PLATFORM_GABBRO)
+  int text_size = 34*ZOOM_FACTOR;
+  int text_size_remote = text_size - 16;
+  fixed_t center_line_length = INT_TO_FIXED(7*ZOOM_FACTOR);
 #elif defined(PBL_ROUND)
   int text_size = 22*ZOOM_FACTOR;
   int text_size_remote = text_size - 10;
-  fixed_t center_line_length = INT_TO_FIXED(6*ZOOM_FACTOR);
+  fixed_t center_line_length = INT_TO_FIXED(5*ZOOM_FACTOR);
 #else
   int text_size = 18*ZOOM_FACTOR;
   int text_size_remote = text_size - 8;

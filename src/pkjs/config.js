@@ -81,7 +81,7 @@ module.exports = [
         "type": "select",
         "messageKey": "TZ_ID",
         "label": "2nd Timezone",
-        "description": "Data provided by worldtimeapi.org",
+        "description": "Data provided by timeapi.io",
         "options": [
           { "label": "Select a Zone", "value": "" }
           ]

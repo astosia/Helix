@@ -1,7 +1,7 @@
 {
   "name": "Helix",
   "author": "astosia",
-  "version": "2.5.0",
+  "version": "3.5.0",
   "keywords": [
     "pebble",
     "watchface",
@@ -21,8 +21,7 @@
   "private": true,
   "dependencies": {
     "@rebble/clay": "^1.0.6",
-    "pebble-clay": "^1.0.4",
-    "pebble-fctx": "^1.6.0",
+    "pebble-fctx": "^1.6.5",
     "pebble-fctx-compiler": "^1.2.2"
   },
   "pebble": {
@@ -35,7 +34,9 @@
       "basalt",
       "chalk",
       "diorite",
-      "emery"
+      "emery",
+      "flint",
+      "gabbro"
     ],
     "watchapp": {
       "watchface": true
